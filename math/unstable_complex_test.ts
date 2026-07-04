@@ -60,9 +60,10 @@ Deno.test("Complex", async (t) => {
     });
 
     await t.step("isZero()", () => {
-      assert(new Complex(0, 0).isReal());
-      assertFalse(new Complex(0, 4).isReal());
-      assertFalse(new Complex(-1, 4).isReal());
+      assert(new Complex(0, 0).isZero());
+      assertFalse(new Complex(0, 4).isZero());
+      assertFalse(new Complex(-1, 4).isZero());
+      assert(new Complex(0, 1.6e-16).isZero(1e-15));
     });
 
     await t.step("isFinite()", () => {
@@ -102,7 +103,7 @@ Deno.test("Complex", async (t) => {
       );
       assertEquals(
         new Complex(NaN, 4).add(new Complex(Infinity, 2)),
-        complexInfinity,
+        complexNaN,
       );
       assertEquals(
         new Complex(NaN, 4).add(new Complex(3, 2)),
