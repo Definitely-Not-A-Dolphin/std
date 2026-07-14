@@ -17,9 +17,6 @@ function assertAlmostEqualComplex(
 }
 
 Deno.test("Complex", async (t) => {
-  const complexNaN = new Complex(NaN);
-  const complexInfinity = new Complex(Infinity);
-
   await t.step("constructor", async (t) => {
     await t.step("Basic", () => {
       assertEquals(new Complex(1, 0), Complex.one);
@@ -28,17 +25,17 @@ Deno.test("Complex", async (t) => {
     });
 
     await t.step("NaN", () => {
-      assertEquals(new Complex(NaN, 1), complexNaN);
-      assertEquals(new Complex(1, NaN), complexNaN);
-      assertEquals(new Complex(NaN, NaN), complexNaN);
+      assertEquals(new Complex(NaN, 1), Complex.NaN);
+      assertEquals(new Complex(1, NaN), Complex.NaN);
+      assertEquals(new Complex(NaN, NaN), Complex.NaN);
     });
 
     await t.step("Infinity", () => {
-      assertEquals(new Complex(Infinity, 1), complexInfinity);
-      assertEquals(new Complex(1, -Infinity), complexInfinity);
-      assertEquals(new Complex(Infinity, -Infinity), complexInfinity);
-      assertEquals(new Complex(Infinity, NaN), complexInfinity);
-      assertEquals(new Complex(NaN, Infinity), complexInfinity);
+      assertEquals(new Complex(Infinity, 1), Complex.Infinity);
+      assertEquals(new Complex(1, -Infinity), Complex.Infinity);
+      assertEquals(new Complex(Infinity, -Infinity), Complex.Infinity);
+      assertEquals(new Complex(Infinity, NaN), Complex.Infinity);
+      assertEquals(new Complex(NaN, Infinity), Complex.Infinity);
     });
   });
 
@@ -47,16 +44,16 @@ Deno.test("Complex", async (t) => {
       assertFalse(new Complex(4, 4).isReal());
       assert(new Complex(4).isReal());
       assert(new Complex(4, 1e-16).isReal(1e-15));
-      assertFalse(complexInfinity.isReal());
-      assertFalse(complexNaN.isReal());
+      assertFalse(Complex.Infinity.isReal());
+      assertFalse(Complex.NaN.isReal());
     });
 
     await t.step("isImaginary()", () => {
       assertFalse(new Complex(4, 4).isImaginary());
       assert(new Complex(0, 4).isImaginary());
       assert(new Complex(1e-16, 4).isImaginary(1e-15));
-      assertFalse(complexInfinity.isImaginary());
-      assertFalse(complexNaN.isImaginary());
+      assertFalse(Complex.Infinity.isImaginary());
+      assertFalse(Complex.NaN.isImaginary());
     });
 
     await t.step("isZero()", () => {
@@ -105,15 +102,15 @@ Deno.test("Complex", async (t) => {
       );
       assertEquals(
         new Complex(5, 4).add(new Complex(Infinity, 2)),
-        complexInfinity,
+        Complex.Infinity,
       );
       assertEquals(
         new Complex(NaN, 4).add(new Complex(Infinity, 2)),
-        complexNaN,
+        Complex.NaN,
       );
       assertEquals(
         new Complex(NaN, 4).add(new Complex(3, 2)),
-        complexNaN,
+        Complex.NaN,
       );
     });
 
@@ -121,8 +118,8 @@ Deno.test("Complex", async (t) => {
       assertEquals(new Complex(-1, -2).neg(), new Complex(1, 2));
       assertEquals(new Complex(0, -2).neg(), new Complex(0, 2));
       assertEquals(Complex.zero.neg(), Complex.zero);
-      assertEquals(complexNaN.neg(), complexNaN);
-      assertEquals(complexInfinity.neg(), complexInfinity);
+      assertEquals(Complex.NaN.neg(), Complex.NaN);
+      assertEquals(Complex.Infinity.neg(), Complex.Infinity);
     });
 
     await t.step("sub()", () => {
@@ -132,15 +129,15 @@ Deno.test("Complex", async (t) => {
       );
       assertEquals(
         new Complex(5, 4).sub(new Complex(Infinity, 2)),
-        complexInfinity,
+        Complex.Infinity,
       );
       assertEquals(
         new Complex(NaN, 4).sub(new Complex(Infinity, 2)),
-        complexNaN,
+        Complex.NaN,
       );
       assertEquals(
         new Complex(NaN, 4).sub(new Complex(3, 2)),
-        complexNaN,
+        Complex.NaN,
       );
     });
 
@@ -151,19 +148,19 @@ Deno.test("Complex", async (t) => {
       );
       assertEquals(
         new Complex(Infinity).sub(new Complex(4, 2)),
-        complexInfinity,
+        Complex.Infinity,
       );
       assertEquals(
-        complexInfinity.mul(Complex.zero),
-        complexNaN,
+        Complex.Infinity.mul(Complex.zero),
+        Complex.NaN,
       );
       assertEquals(
         new Complex(NaN, 4).sub(new Complex(Infinity, 2)),
-        complexNaN,
+        Complex.NaN,
       );
       assertEquals(
         new Complex(NaN, 4).sub(new Complex(3, 2)),
-        complexNaN,
+        Complex.NaN,
       );
     });
 
@@ -173,20 +170,20 @@ Deno.test("Complex", async (t) => {
         new Complex(3, 2),
       );
       assertEquals(
-        complexInfinity.div(new Complex(4, 2)),
-        complexInfinity,
+        Complex.Infinity.div(new Complex(4, 2)),
+        Complex.Infinity,
       );
       assertEquals(
         new Complex(4, 2).div(Complex.zero),
-        complexInfinity,
+        Complex.Infinity,
       );
       assertEquals(
-        complexNaN.div(Infinity),
-        complexNaN,
+        Complex.NaN.div(Infinity),
+        Complex.NaN,
       );
       assertEquals(
-        complexNaN.div(new Complex(3, 2)),
-        complexNaN,
+        Complex.NaN.div(new Complex(3, 2)),
+        Complex.NaN,
       );
     });
   });
@@ -195,33 +192,33 @@ Deno.test("Complex", async (t) => {
     await t.step("recip()", () => {
       assertEquals(new Complex(1, 2).recip(), new Complex(.2, -.4));
       assertEquals(new Complex(0, -2).recip(), new Complex(0, .5));
-      assertEquals(Complex.zero.recip(), complexInfinity);
-      assertEquals(complexNaN.recip(), complexNaN);
-      assertEquals(complexInfinity.recip(), Complex.zero);
+      assertEquals(Complex.zero.recip(), Complex.Infinity);
+      assertEquals(Complex.NaN.recip(), Complex.NaN);
+      assertEquals(Complex.Infinity.recip(), Complex.zero);
     });
 
     await t.step("absSquared()", () => {
       assertEquals(new Complex(1, 2).absSquared(), 5);
       assertEquals(new Complex(0, -2).absSquared(), 4);
       assertEquals(Complex.zero.absSquared(), 0);
-      assertEquals(complexNaN.absSquared(), NaN);
-      assertEquals(complexInfinity.absSquared(), Infinity);
+      assertEquals(Complex.NaN.absSquared(), NaN);
+      assertEquals(Complex.Infinity.absSquared(), Infinity);
     });
 
     await t.step("abs()", () => {
       assertEquals(new Complex(1, 2).abs(), Math.sqrt(5));
       assertEquals(new Complex(0, -2).abs(), 2);
       assertEquals(Complex.zero.abs(), 0);
-      assertEquals(complexNaN.abs(), NaN);
-      assertEquals(complexInfinity.abs(), Infinity);
+      assertEquals(Complex.NaN.abs(), NaN);
+      assertEquals(Complex.Infinity.abs(), Infinity);
     });
 
     await t.step("arg()", () => {
       assertAlmostEquals(new Complex(1, 2).arg(), 1.107148718);
       assertEquals(new Complex(0, -2).arg(), -Math.PI / 2);
       assertEquals(Complex.zero.arg(), 0);
-      assertEquals(complexNaN.arg(), NaN);
-      assertEquals(complexInfinity.arg(), NaN);
+      assertEquals(Complex.NaN.arg(), NaN);
+      assertEquals(Complex.Infinity.arg(), NaN);
     });
 
     await t.step("conj()", () => {
@@ -239,8 +236,8 @@ Deno.test("Complex", async (t) => {
       }
 
       assertEquals(Complex.zero.conj(), Complex.zero);
-      assertEquals(complexNaN.conj(), complexNaN);
-      assertEquals(complexInfinity.conj(), complexInfinity);
+      assertEquals(Complex.NaN.conj(), Complex.NaN);
+      assertEquals(Complex.Infinity.conj(), Complex.Infinity);
     });
   });
 
@@ -292,8 +289,8 @@ Deno.test("Complex", async (t) => {
       }
 
       assertEquals(Complex.zero.sqrt(), Complex.zero);
-      assertEquals(complexNaN.sqrt(), complexNaN);
-      assertEquals(complexInfinity.sqrt(), complexInfinity);
+      assertEquals(Complex.NaN.sqrt(), Complex.NaN);
+      assertEquals(Complex.Infinity.sqrt(), Complex.Infinity);
     });
 
     await t.step("cbrt()", () => {
@@ -326,8 +323,8 @@ Deno.test("Complex", async (t) => {
       }
 
       assertEquals(Complex.zero.cbrt(), Complex.zero);
-      assertEquals(complexNaN.cbrt(), complexNaN);
-      assertEquals(complexInfinity.cbrt(), complexInfinity);
+      assertEquals(Complex.NaN.cbrt(), Complex.NaN);
+      assertEquals(Complex.Infinity.cbrt(), Complex.Infinity);
     });
 
     await t.step("ln()", () => {
@@ -352,9 +349,9 @@ Deno.test("Complex", async (t) => {
         new Complex(0, Math.PI),
       );
 
-      assertEquals(Complex.zero.ln(), complexNaN);
-      assertEquals(complexNaN.ln(), complexNaN);
-      assertEquals(complexInfinity.ln(), complexInfinity);
+      assertEquals(Complex.zero.ln(), Complex.NaN);
+      assertEquals(Complex.NaN.ln(), Complex.NaN);
+      assertEquals(Complex.Infinity.ln(), Complex.Infinity);
     });
 
     await t.step("log()", () => {
@@ -374,9 +371,9 @@ Deno.test("Complex", async (t) => {
         new Complex(-1, -2).log(),
         new Complex(.349485, -.88354778),
       );
-      assertEquals(Complex.zero.log(), complexNaN);
-      assertEquals(complexNaN.log(), complexNaN);
-      assertEquals(complexInfinity.log(), complexInfinity);
+      assertEquals(Complex.zero.log(), Complex.NaN);
+      assertEquals(Complex.NaN.log(), Complex.NaN);
+      assertEquals(Complex.Infinity.log(), Complex.Infinity);
     });
 
     await t.step("logn()", () => {
@@ -397,9 +394,9 @@ Deno.test("Complex", async (t) => {
         new Complex(.5, -1.26407109),
       );
       for (const base of [2, 3, 4, 5, 6]) {
-        assertEquals(Complex.zero.logn(base), complexNaN);
-        assertEquals(complexNaN.logn(base), complexNaN);
-        assertEquals(complexInfinity.logn(base), complexInfinity);
+        assertEquals(Complex.zero.logn(base), Complex.NaN);
+        assertEquals(Complex.NaN.logn(base), Complex.NaN);
+        assertEquals(Complex.Infinity.logn(base), Complex.Infinity);
       }
     });
 
@@ -443,8 +440,8 @@ Deno.test("Complex", async (t) => {
       }
 
       assertEquals(Complex.zero.exp(), Complex.one);
-      assertEquals(complexNaN.exp(), complexNaN);
-      assertEquals(complexInfinity.exp(), complexNaN);
+      assertEquals(Complex.NaN.exp(), Complex.NaN);
+      assertEquals(Complex.Infinity.exp(), Complex.NaN);
     });
 
     await t.step("pow()", () => {
@@ -466,8 +463,8 @@ Deno.test("Complex", async (t) => {
         new Complex(-36993.6705, -9727.77819),
       );
       assertEquals(Complex.zero.pow(Complex.zero), Complex.one);
-      assertEquals(complexNaN.pow(new Complex(2, 3)), complexNaN);
-      assertEquals(complexInfinity.pow(new Complex(4, 5)), complexNaN);
+      assertEquals(Complex.NaN.pow(new Complex(2, 3)), Complex.NaN);
+      assertEquals(Complex.Infinity.pow(new Complex(4, 5)), Complex.NaN);
     });
   });
 
@@ -490,8 +487,8 @@ Deno.test("Complex", async (t) => {
         new Complex(-3.16577851, -1.95960104),
       );
       assertEquals(Complex.zero.sin(), Complex.zero);
-      assertEquals(complexNaN.sin(), complexNaN);
-      assertEquals(complexInfinity.sin(), complexNaN);
+      assertEquals(Complex.NaN.sin(), Complex.NaN);
+      assertEquals(Complex.Infinity.sin(), Complex.NaN);
     });
 
     await t.step("cos()", () => {
@@ -512,8 +509,8 @@ Deno.test("Complex", async (t) => {
         new Complex(2.03272301, -3.0518978),
       );
       assertEquals(Complex.zero.cos(), Complex.one);
-      assertEquals(complexNaN.cos(), complexNaN);
-      assertEquals(complexInfinity.cos(), complexNaN);
+      assertEquals(Complex.NaN.cos(), Complex.NaN);
+      assertEquals(Complex.Infinity.cos(), Complex.NaN);
     });
 
     await t.step("tan()", () => {
@@ -534,8 +531,8 @@ Deno.test("Complex", async (t) => {
         new Complex(-.0338128260, -1.0147936161),
       );
       assertEquals(Complex.zero.tan(), Complex.zero);
-      assertEquals(complexNaN.tan(), complexNaN);
-      assertEquals(complexInfinity.tan(), complexNaN);
+      assertEquals(Complex.NaN.tan(), Complex.NaN);
+      assertEquals(Complex.Infinity.tan(), Complex.NaN);
     });
 
     await t.step("cot()", () => {
@@ -555,9 +552,9 @@ Deno.test("Complex", async (t) => {
         new Complex(-1, -2).cot(),
         new Complex(-0.0327977555, 0.984329226),
       );
-      assertEquals(Complex.zero.cot(), complexInfinity);
-      assertEquals(complexNaN.cot(), complexNaN);
-      assertEquals(complexInfinity.cot(), complexNaN);
+      assertEquals(Complex.zero.cot(), Complex.Infinity);
+      assertEquals(Complex.NaN.cot(), Complex.NaN);
+      assertEquals(Complex.Infinity.cot(), Complex.NaN);
     });
 
     await t.step("sec()", () => {
@@ -578,8 +575,8 @@ Deno.test("Complex", async (t) => {
         new Complex(.1511762982, .2269736753),
       );
       assertEquals(Complex.zero.sec(), Complex.one);
-      assertEquals(complexNaN.sec(), complexNaN);
-      assertEquals(complexInfinity.sec(), complexNaN);
+      assertEquals(Complex.NaN.sec(), Complex.NaN);
+      assertEquals(Complex.Infinity.sec(), Complex.NaN);
     });
 
     await t.step("csc()", () => {
@@ -599,9 +596,9 @@ Deno.test("Complex", async (t) => {
         new Complex(-1, -2).csc(),
         new Complex(-.2283750655, .1413630216),
       );
-      assertEquals(Complex.zero.csc(), complexInfinity);
-      assertEquals(complexNaN.csc(), complexNaN);
-      assertEquals(complexInfinity.csc(), complexNaN);
+      assertEquals(Complex.zero.csc(), Complex.Infinity);
+      assertEquals(Complex.NaN.csc(), Complex.NaN);
+      assertEquals(Complex.Infinity.csc(), Complex.NaN);
     });
   });
 
@@ -624,8 +621,8 @@ Deno.test("Complex", async (t) => {
         new Complex(.48905626, -1.40311925),
       );
       assertEquals(Complex.zero.sinh(), Complex.zero);
-      assertEquals(complexNaN.sinh(), complexNaN);
-      assertEquals(complexInfinity.sinh(), complexNaN);
+      assertEquals(Complex.NaN.sinh(), Complex.NaN);
+      assertEquals(Complex.Infinity.sinh(), Complex.NaN);
     });
 
     await t.step("cosh()", () => {
@@ -646,8 +643,8 @@ Deno.test("Complex", async (t) => {
         new Complex(-.64214812, 1.06860742),
       );
       assertEquals(Complex.zero.cosh(), Complex.one);
-      assertEquals(complexNaN.cosh(), complexNaN);
-      assertEquals(complexInfinity.cosh(), complexNaN);
+      assertEquals(Complex.NaN.cosh(), Complex.NaN);
+      assertEquals(Complex.Infinity.cosh(), Complex.NaN);
     });
 
     await t.step("tanh()", () => {
@@ -668,8 +665,8 @@ Deno.test("Complex", async (t) => {
         new Complex(-1.1667362572, .2434582011),
       );
       assertEquals(Complex.zero.tanh(), Complex.zero);
-      assertEquals(complexNaN.tanh(), complexNaN);
-      assertEquals(complexInfinity.tanh(), complexNaN);
+      assertEquals(Complex.NaN.tanh(), Complex.NaN);
+      assertEquals(Complex.Infinity.tanh(), Complex.NaN);
     });
 
     await t.step("coth()", () => {
@@ -689,9 +686,9 @@ Deno.test("Complex", async (t) => {
         new Complex(-1, -2).coth(),
         new Complex(-.8213297974, -.1713836129),
       );
-      assertEquals(Complex.zero.coth(), complexInfinity);
-      assertEquals(complexNaN.coth(), complexNaN);
-      assertEquals(complexInfinity.coth(), complexNaN);
+      assertEquals(Complex.zero.coth(), Complex.Infinity);
+      assertEquals(Complex.NaN.coth(), Complex.NaN);
+      assertEquals(Complex.Infinity.coth(), Complex.NaN);
     });
 
     await t.step("sech()", () => {
@@ -712,8 +709,8 @@ Deno.test("Complex", async (t) => {
         new Complex(-.4131493442, -.6875274386),
       );
       assertEquals(Complex.zero.sech(), Complex.one);
-      assertEquals(complexNaN.sech(), complexNaN);
-      assertEquals(complexInfinity.sech(), complexNaN);
+      assertEquals(Complex.NaN.sech(), Complex.NaN);
+      assertEquals(Complex.Infinity.sech(), Complex.NaN);
     });
 
     await t.step("csch()", () => {
@@ -733,9 +730,9 @@ Deno.test("Complex", async (t) => {
         new Complex(-1, -2).csch(),
         new Complex(.2215009308, .6354937992),
       );
-      assertEquals(Complex.zero.csch(), complexInfinity);
-      assertEquals(complexNaN.csch(), complexNaN);
-      assertEquals(complexInfinity.csch(), complexNaN);
+      assertEquals(Complex.zero.csch(), Complex.Infinity);
+      assertEquals(Complex.NaN.csch(), Complex.NaN);
+      assertEquals(Complex.Infinity.csch(), Complex.NaN);
     });
   });
 
@@ -758,8 +755,8 @@ Deno.test("Complex", async (t) => {
         new Complex(-.42707859, -1.52857092),
       );
       assertEquals(Complex.zero.asin(), Complex.zero);
-      assertEquals(complexNaN.asin(), complexNaN);
-      assertEquals(complexInfinity.asin(), complexNaN);
+      assertEquals(Complex.NaN.asin(), Complex.NaN);
+      assertEquals(Complex.Infinity.asin(), Complex.NaN);
     });
 
     await t.step("acos()", () => {
@@ -780,8 +777,8 @@ Deno.test("Complex", async (t) => {
         new Complex(1.99787491, 1.52857092),
       );
       assertEquals(Complex.zero.acos(), new Complex(Math.PI / 2));
-      assertEquals(complexNaN.acos(), complexNaN);
-      assertEquals(complexInfinity.acos(), complexNaN);
+      assertEquals(Complex.NaN.acos(), Complex.NaN);
+      assertEquals(Complex.Infinity.acos(), Complex.NaN);
     });
 
     await t.step("atan()", () => {
@@ -802,8 +799,8 @@ Deno.test("Complex", async (t) => {
         new Complex(-1.33897252, -.40235948),
       );
       assertEquals(Complex.zero.atan(), Complex.zero);
-      assertEquals(complexNaN.atan(), complexNaN);
-      assertEquals(complexInfinity.atan(), complexNaN);
+      assertEquals(Complex.NaN.atan(), Complex.NaN);
+      assertEquals(Complex.Infinity.atan(), Complex.NaN);
     });
   });
 
@@ -826,8 +823,8 @@ Deno.test("Complex", async (t) => {
         new Complex(-1.46935174, -1.06344002),
       );
       assertEquals(Complex.zero.asinh(), Complex.zero);
-      assertEquals(complexNaN.asinh(), complexNaN);
-      assertEquals(complexInfinity.asinh(), complexInfinity);
+      assertEquals(Complex.NaN.asinh(), Complex.NaN);
+      assertEquals(Complex.Infinity.asinh(), Complex.Infinity);
     });
 
     await t.step("acosh()", () => {
@@ -848,8 +845,8 @@ Deno.test("Complex", async (t) => {
         new Complex(1.5285709194, -1.9978749131),
       );
       assertEquals(Complex.zero.acosh(), new Complex(0, Math.PI / 2));
-      assertEquals(complexNaN.acosh(), complexNaN);
-      assertEquals(complexInfinity.acosh(), complexNaN);
+      assertEquals(Complex.NaN.acosh(), Complex.NaN);
+      assertEquals(Complex.Infinity.acosh(), Complex.NaN);
     });
 
     await t.step("atanh()", () => {
@@ -870,8 +867,8 @@ Deno.test("Complex", async (t) => {
         new Complex(-.1732867951, -1.1780972450),
       );
       assertEquals(Complex.zero.atanh(), Complex.zero);
-      assertEquals(complexNaN.atanh(), complexNaN);
-      assertEquals(complexInfinity.atanh(), complexNaN);
+      assertEquals(Complex.NaN.atanh(), Complex.NaN);
+      assertEquals(Complex.Infinity.atanh(), Complex.NaN);
     });
   });
 });
