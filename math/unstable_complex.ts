@@ -122,10 +122,6 @@ export class Complex {
     (typeof num === "number" && Number.isNaN(num)) ||
     (num instanceof Complex && num.isNaN());
 
-  static #isInfinite = (num: Complex | number): boolean =>
-    (typeof num === "number" && isInfinite(num)) ||
-    (num instanceof Complex && (isInfinite(num.real) || isInfinite(num.imag)));
-
   /**
    * Checks whether a complex number is real, meaning its imaginary part is equal to zero.
    *
