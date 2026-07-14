@@ -1,8 +1,23 @@
 // Copyright 2018-2026 the Deno authors. MIT license.
 
-// Should this class be parameterized to support bigint?
+/*
+Annex G https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3886.pdf
 
-// Annex G https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3886.pdf
+Summary:
+
+Rules for constructing complex numbers regarding NaN and Infinity
+- Real Infinity + Real Finite * i = Complex Infinity
+- Real Finite + Real Infinity * i = Complex Infinity
+- Real Infinity + Real NaN * i = Complex Infinity
+- Real NaN + Real Infinity * i = Complex Infinity
+- Real NaN + Real NaN * i = Complex NaN
+
+Rules for complex multiplication and division
+- Infinity * Finite = Infinity
+- Infinity / Finite = Infinity
+- Finite / Infinity = Zero
+- Nonzero / Zero = Infinity
+*/
 
 function isInfinite(num: number): boolean {
   return num === Infinity || num === -Infinity;
@@ -16,7 +31,7 @@ function isInfinite(num: number): boolean {
  * import { Complex } from "@std/math/unstable-complex";
  *
  * let z0 = new Complex(1, 2); // Represents 1 + 2i
- * let z1 = new Complex(-3) // Represents -3 + 0i
+ * let z1 = new Complex(-3) // Represents -3 + 0i = 3
  * ```
  *
  * @property {number} real The real part of this complex number.
@@ -38,7 +53,11 @@ export class Complex {
    */
   imag: number;
 
-  /** Creates a new instance of a Complex. */
+  /**
+   * Creates a new instance of a Complex.
+   *
+   * @experimental **UNSTABLE**: New API, yet to be vetted.
+   */
   constructor(real: number, imag?: number) {
     if (isInfinite(real) || (imag !== undefined && isInfinite(imag))) {
       this.real = Infinity;
@@ -54,19 +73,50 @@ export class Complex {
     }
   }
 
-  /** Zero as a complex number */
+  /**
+   * Zero as a complex number.
+   *
+   * @experimental **UNSTABLE**: New API, yet to be vetted.
+   */
   static zero = new Complex(0);
-  /** i, the imaginary unit */
+  /**
+   * i, the imaginary unit.
+   *
+   * @experimental **UNSTABLE**: New API, yet to be vetted.
+   */
   static i = new Complex(0, 1);
-  /** -i, the negative of the imaginary unit */
+  /**
+   * -i, the negative of the imaginary unit
+   *
+   * @experimental **UNSTABLE**: New API, yet to be vetted.
+   */
   static negI = new Complex(0, -1);
-  /** One as a complex number */
+  /**
+   * One as a complex number
+   *
+   * @experimental **UNSTABLE**: New API, yet to be vetted.
+   */
   static one = new Complex(1);
-  /** Negative one as a complex number */
+  /**
+   * Negative one as a complex number
+   *
+   * @experimental **UNSTABLE**: New API, yet to be vetted.
+   */
   static negOne = new Complex(-1);
-
-  static #complexNaN = new Complex(NaN);
-  static #complexInfinity = new Complex(Infinity);
+  /**
+   * NaN as a complex number
+   *
+   * @experimental **UNSTABLE**: New API, yet to be vetted.
+   */
+  // deno-lint-ignore deno-style-guide/naming-convention
+  static NaN = new Complex(NaN);
+  /**
+   * The complex infinity
+   *
+   * @experimental **UNSTABLE**: New API, yet to be vetted.
+   */
+  // deno-lint-ignore deno-style-guide/naming-convention
+  static Infinity = new Complex(Infinity);
 
   static #isNaN = (num: Complex | number): boolean =>
     (typeof num === "number" && Number.isNaN(num)) ||
@@ -74,12 +124,14 @@ export class Complex {
 
   static #isInfinite = (num: Complex | number): boolean =>
     (typeof num === "number" && isInfinite(num)) ||
-    (num instanceof Complex && isInfinite(num.real) && isInfinite(num.imag));
+    (num instanceof Complex && (isInfinite(num.real) || isInfinite(num.imag)));
 
   /**
    * Checks whether a complex number is real, meaning its imaginary part is equal to zero.
    *
-   * @returns {boolean} Whether this is real.
+   * @param {number} tolerance? The maximum amount the imaginary part is allowed to differ from zero. Defaults to zero.
+   *
+   * @returns {boolean} Whether this is real, given a tolerance.
    *
    * @example Usage
    * ```ts
@@ -88,18 +140,22 @@ export class Complex {
    *
    * assert(new Complex(4, 0).isReal());
    * assertFalse(new Complex(0, 4).isReal());
+   * assertFalse(new Complex(1e-15, 4).isReal(1e-16));
    * ```
    *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
-  isReal(): boolean {
-    return this.imag === 0 && Number.isFinite(this.real);
+  isReal(tolerance?: number): boolean {
+    return Math.abs(this.imag) <= (tolerance ?? 0) &&
+      Number.isFinite(this.real);
   }
 
   /**
    * Checks whether a complex number is imaginary, meaning its real part is equal to zero.
    *
-   * @returns {boolean} Whether this is imaginary.
+   * @param {number} tolerance? The maximum amount the real part is allowed to differ from zero. Defaults to zero.
+   *
+   * @returns {boolean} Whether this is imaginary, given a tolerance.
    *
    * @example Usage
    * ```ts
@@ -108,18 +164,22 @@ export class Complex {
    *
    * assert(new Complex(0, 4).isImaginary());
    * assertFalse(new Complex(4, 0).isImaginary());
+   * assertFalse(new Complex(4, 1e-16).isImaginary(1e-15));
    * ```
    *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
-  isImaginary(): boolean {
-    return this.real === 0 && Number.isFinite(this.imag);
+  isImaginary(tolerance?: number): boolean {
+    return Math.abs(this.real) <= (tolerance ?? 0) &&
+      Number.isFinite(this.imag);
   }
 
   /**
    * Checks whether this is equal to zero.
    *
-   * @returns {boolean} Whether this is equal to zero.
+   * @param {number} tolerance? The maximum distance this is allowed to have from zero on the complex plane.
+   *
+   * @returns {boolean} Whether this is equal to zero, given a tolerance.
    *
    * @example Usage
    * ```ts
@@ -127,14 +187,14 @@ export class Complex {
    * import { assert, assertFalse } from "@std/assert";
    *
    * assert(new Complex(0, 0).isZero());
+   * assert(new Complex(1e-16, 1.4e-15).isZero(1e-14));
    * assertFalse(new Complex(0, 4).isZero());
    * ```
    *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   isZero(tolerance?: number): boolean {
-    return (this.real === 0 && this.imag === 0) ||
-      (tolerance !== undefined && this.abs() < tolerance);
+    return this.abs() <= (tolerance ?? 0);
   }
 
   /**
@@ -201,6 +261,29 @@ export class Complex {
   }
 
   /**
+   * Checks whether two complex numbers are equal.
+   *
+   * @param {Complex | number} num A complex number.
+   * @param {number} tolerance? The maximum distance the supplied complex numbers are allowed to have on the complex plane. Defaults to zero.
+   *
+   * @returns {Complex} Whether the supplied complex numbers are equal, given a tolerance.
+   *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assert, assertFalse } from "@std/assert";
+   *
+   * assert(new Complex(0, 3).equals(new Complex(0, 3)));
+   * assert(new Complex(4, 3).equals(new Complex(4, 3 - 1e-16), 1e-15));
+   * ```
+   *
+   * @experimental **UNSTABLE**: New API, yet to be vetted.
+   */
+  equals(num: Complex | number, tolerance?: number): boolean {
+    return this.sub(num).abs() <= (tolerance ?? 0);
+  }
+
+  /**
    * Adds complex numbers.
    *
    * @param {Complex | number} num A complex number.
@@ -219,9 +302,9 @@ export class Complex {
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   add(num: Complex | number): Complex {
-    if (typeof num === "number") num = new Complex(num);
-
-    return new Complex(this.real + num.real, this.imag + num.imag);
+    return typeof num === "number"
+      ? new Complex(this.real + num, this.imag)
+      : new Complex(this.real + num.real, this.imag + num.imag);
   }
 
   /**
@@ -264,7 +347,6 @@ export class Complex {
    */
   sub(num: Complex | number): Complex {
     if (typeof num === "number") num = new Complex(num);
-    if (Complex.#isNaN(num) || num.isNaN()) return Complex.#complexNaN;
 
     return new Complex(this.real - num.real, this.imag - num.imag);
   }
@@ -315,14 +397,11 @@ export class Complex {
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   div(num: Complex | number): Complex {
+    if (this.isNaN() || Complex.#isNaN(num)) return Complex.NaN;
     if (num instanceof Complex && num.isReal()) num = num.real;
-    if (this.isNaN() || Complex.#isNaN(num)) return Complex.#complexNaN;
 
     if (typeof num === "number") {
-      return Number.isNaN(num) ? Complex.#complexNaN : new Complex(
-        this.real / num,
-        this.imag / num,
-      );
+      return new Complex(this.real / num, this.imag / num);
     } else {
       const absSquaredNum = num.absSquared();
 
@@ -350,21 +429,16 @@ export class Complex {
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   recip(): Complex {
-    if (this instanceof Complex && this.isReal()) {
-      return new Complex(1 / this.real);
-    }
+    if (this.isReal()) return new Complex(1 / this.real);
+    if (typeof this === "number") return new Complex(1 / this);
+    if (this.isInfinite()) return Complex.zero;
 
-    if (typeof this === "number") {
-      return Number.isNaN(this) ? Complex.#complexNaN : new Complex(1 / this);
-    } else {
-      if (this.isInfinite()) return Complex.zero;
-      const absSquaredThis = this.absSquared();
+    const absSquaredThis = this.absSquared();
 
-      return new Complex(
-        this.real / absSquaredThis,
-        -this.imag / absSquaredThis,
-      );
-    }
+    return new Complex(
+      this.real / absSquaredThis,
+      -this.imag / absSquaredThis,
+    );
   }
 
   /**
@@ -470,17 +544,18 @@ export class Complex {
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   sqrt(): Complex {
+    if (this.isReal() && 0 <= this.real) {
+      return new Complex(Math.sqrt(this.real));
+    }
     if (this.isReal()) {
-      return 0 <= this.real
-        ? new Complex(Math.sqrt(this.real))
-        : new Complex(0, Math.sqrt(-this.real));
+      return new Complex(0, Math.sqrt(-this.real));
     }
 
     const absThis = this.abs();
 
     return new Complex(
-      Math.sqrt((this.real + absThis) / 2),
-      (this.imag < 0 ? -1 : 1) * Math.sqrt((-this.real + absThis) / 2),
+      Math.sqrt((absThis + this.real) / 2),
+      (this.imag < 0 ? -1 : 1) * Math.sqrt((absThis - this.real) / 2),
     );
   }
 
@@ -504,14 +579,14 @@ export class Complex {
    */
   cbrt(): Complex {
     if (this.isReal()) return new Complex(Math.cbrt(this.real));
-    if (this.isInfinite()) return Complex.#complexInfinity;
+    if (this.isInfinite()) return Complex.Infinity;
 
-    const argThisdiv = this.arg() / 3;
+    const argCbrtThis = this.arg() / 3;
     const absCbrt = Math.cbrt(this.abs());
 
     return new Complex(
-      absCbrt * Math.cos(argThisdiv),
-      absCbrt * Math.sin(argThisdiv),
+      absCbrt * Math.cos(argCbrtThis),
+      absCbrt * Math.sin(argCbrtThis),
     );
   }
 
@@ -534,7 +609,7 @@ export class Complex {
    */
   ln(): Complex {
     return this.isZero()
-      ? Complex.#complexNaN
+      ? Complex.NaN
       : new Complex(Math.log(this.absSquared()) / 2, this.arg());
   }
 
@@ -542,6 +617,16 @@ export class Complex {
    * Takes the base-10 logarithm of a complex number.
    *
    * @returns {Complex} The base-10 logarithm of this.
+   *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z = new Complex(2, 3).log();
+   * assertAlmostEquals(z.real, .55697168);
+   * assertAlmostEquals(z.imag, .42682189);
+   * ```
    *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
@@ -553,6 +638,16 @@ export class Complex {
    * Takes the base-n logarithm of a complex number.
    *
    * @returns {Complex} The base-n logarithm of this.
+   *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z = new Complex(4, -2).logn(6);
+   * assertAlmostEquals(z.real, .83597501);
+   * assertAlmostEquals(z.imag, -.25876666);
+   * ```
    *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
@@ -589,42 +684,54 @@ export class Complex {
   }
 
   /**
-   * Raises a complex number to the power of another complex number.
+   * Raises a complex number to the power of another (complex) number.
    *
-   * @param {Complex | number} num A complex number.
+   * @param {Complex | number} w A (complex) number.
    *
-   * @returns {Complex} This to the power of the supplied complex number.
+   * @returns {Complex} This to the power of the supplied number.
    *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const x = new Complex(1, 2);
+   * const y = new Complex(3, 4);
+   * const z = x.pow(y);
+   * assertAlmostEquals(z.real, .12900959);
+   * assertAlmostEquals(z.imag, .03392409);
+   * ```
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
-  pow(num: Complex | number): Complex {
-    if (typeof num !== "number" && num.imag === 0) num = num.real;
+  pow(w: Complex | number): Complex {
+    if (w instanceof Complex && w.imag === 0) w = w.real;
 
-    if (typeof num === "number" && Number.isInteger(num)) {
+    if (typeof w === "number" && Number.isInteger(w)) {
       // If w is an integer, use exponentiation by squaring.
-      return num === 0
+      return w === 0
         ? new Complex(1, 0)
-        : num === 1
+        : w === 1
         ? this
-        : num === -1
+        : w === -1
         ? this.recip()
-        : num < 0
-        ? this.pow(-num).recip()
-        : num % 2 === 0
-        ? this.mul(this).pow(num / 2)
-        : this.mul(this.mul(this).pow((num - 1) / 2));
-    } else if (typeof num === "number") {
+        : w < 0
+        ? this.pow(-w).recip()
+        : w % 2 === 0
+        ? this.mul(this).pow(w / 2)
+        : this.mul(this.mul(this).pow((w - 1) / 2));
+    } else if (typeof w === "number") {
       // If w is a real number, use De Moivre's formula.
-      const argThisw = this.arg() * num;
-      const absPow = Math.pow(this.abs(), num);
+      const argThisw = this.arg() * w;
+      const absPow = Math.pow(this.abs(), w);
 
       return new Complex(
         absPow * Math.cos(argThisw),
         absPow * Math.sin(argThisw),
       );
     } else {
-      return this.pow(num.real).mul(
-        this.ln().mul(new Complex(0, num.imag)).exp(),
+      // If w is a complex number, use this formula.
+      return this.pow(w.real).mul(
+        this.ln().mul(new Complex(0, w.imag)).exp(),
       );
     }
   }
@@ -634,12 +741,23 @@ export class Complex {
    *
    * @returns {Complex} The sine of this.
    *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).sin();
+   * const z1 = new Complex(2 * Math.PI).sin();
+   * assertAlmostEquals(z0.real, 9.15449915);
+   * assertAlmostEquals(z0.imag, -4.16890696);
+   * assertAlmostEquals(z1.real, 0, 1e-15);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
+   *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   sin(): Complex {
-    if (this.isReal()) return new Complex(Math.sin(this.real));
-
-    return new Complex(
+    return this.isReal() ? new Complex(Math.sin(this.real)) : new Complex(
       Math.sin(this.real) * Math.cosh(this.imag),
       Math.cos(this.real) * Math.sinh(this.imag),
     );
@@ -650,12 +768,23 @@ export class Complex {
    *
    * @returns {Complex} The cosine of this.
    *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).cos();
+   * const z1 = new Complex(2 * Math.PI).cos();
+   * assertAlmostEquals(z0.real, -4.18962569);
+   * assertAlmostEquals(z0.imag, -9.10922789);
+   * assertAlmostEquals(z1.real, 1);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
+   *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   cos(): Complex {
-    if (this.isReal()) return new Complex(Math.cos(this.real));
-
-    return new Complex(
+    return this.isReal() ? new Complex(Math.cos(this.real)) : new Complex(
       Math.cos(this.real) * Math.cosh(this.imag),
       -Math.sin(this.real) * Math.sinh(this.imag),
     );
@@ -665,6 +794,19 @@ export class Complex {
    * Takes the tangent of a complex number.
    *
    * @returns {Complex} The tangent of this.
+   *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).tan();
+   * const z1 = new Complex(2 * Math.PI).tan();
+   * assertAlmostEquals(z0.real, -.00376403, 5e-9);
+   * assertAlmostEquals(z0.imag, 1.00323863);
+   * assertAlmostEquals(z1.real, 0, 1e-15);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
    *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
@@ -677,6 +819,19 @@ export class Complex {
    *
    * @returns {Complex} The cotangent of this.
    *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).cot();
+   * const z1 = new Complex(Math.PI / 2).cot();
+   * assertAlmostEquals(z0.real, -.00373971, 4e-10);
+   * assertAlmostEquals(z0.imag, -.9967578);
+   * assertAlmostEquals(z1.real, 0, 1e-15);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
+   *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   cot(): Complex {
@@ -687,6 +842,19 @@ export class Complex {
    * Takes the secant of a complex number.
    *
    * @returns {Complex} The secant of this.
+   *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).sec();
+   * const z1 = new Complex(2 * Math.PI).sec();
+   * assertAlmostEquals(z0.real, -.04167496, 5e-9);
+   * assertAlmostEquals(z0.imag, .09061114);
+   * assertAlmostEquals(z1.real, 1);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
    *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
@@ -699,6 +867,19 @@ export class Complex {
    *
    * @returns {Complex} The cosecant of this.
    *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).csc();
+   * const z1 = new Complex(Math.PI / 2).csc();
+   * assertAlmostEquals(z0.real, .09047321);
+   * assertAlmostEquals(z0.imag, .04120099, 5e-9);
+   * assertAlmostEquals(z1.real, 1);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
+   *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   csc(): Complex {
@@ -710,12 +891,23 @@ export class Complex {
    *
    * @returns {Complex} The arcsine of this.
    *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).asin();
+   * const z1 = new Complex(1).asin();
+   * assertAlmostEquals(z0.real, .57065278);
+   * assertAlmostEquals(z0.imag, 1.98338703);
+   * assertAlmostEquals(z1.real, Math.PI / 2);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
+   *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   asin(): Complex {
-    if (this.isReal()) return new Complex(Math.asin(this.real));
-
-    return Complex.negI.mul(
+    return this.isReal() ? new Complex(Math.asin(this.real)) : Complex.negI.mul(
       (Complex.i.mul(this).add((new Complex(1).sub(this.pow(2))).sqrt())).ln(),
     );
   }
@@ -724,6 +916,19 @@ export class Complex {
    * Takes the arccosine (inverse cosine) of a complex number.
    *
    * @returns {Complex} The arccosine of this.
+   *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).acos();
+   * const z1 = new Complex(1).acos();
+   * assertAlmostEquals(z0.real, 1.00014354);
+   * assertAlmostEquals(z0.imag, -1.98338703);
+   * assertAlmostEquals(z1.real, 0, 1e-15);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
    *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
@@ -736,11 +941,24 @@ export class Complex {
    *
    * @returns {Complex} The arctangent of this.
    *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).atan();
+   * const z1 = new Complex(1).atan();
+   * assertAlmostEquals(z0.real, 1.40992105);
+   * assertAlmostEquals(z0.imag, .22907268);
+   * assertAlmostEquals(z1.real, Math.PI / 4);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
+   *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   atan(): Complex {
     return (Complex.one.sub(Complex.i.mul(this))).ln().sub(
-      (Complex.one.add(Complex.i.mul(this))).ln(),
+      (Complex.one.add(this.mul(Complex.i))).ln(),
     ).div(2).mul(Complex.i);
   }
 
@@ -749,12 +967,23 @@ export class Complex {
    *
    * @returns {Complex} The hyperbolic sine of this.
    *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).sinh();
+   * const z1 = new Complex(Math.PI / 2).sinh();
+   * assertAlmostEquals(z0.real, -3.59056459);
+   * assertAlmostEquals(z0.imag, .53092109);
+   * assertAlmostEquals(z1.real, 2.30129890231);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
+   *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   sinh(): Complex {
-    if (this.isReal()) return new Complex(this.real);
-
-    return new Complex(
+    return this.isReal() ? new Complex(Math.sinh(this.real)) : new Complex(
       Math.sinh(this.real) * Math.cos(this.imag),
       Math.cosh(this.real) * Math.sin(this.imag),
     );
@@ -765,12 +994,23 @@ export class Complex {
    *
    * @returns {Complex} The hyperbolic cosine of this.
    *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).cosh();
+   * const z1 = new Complex(Math.PI / 2).cosh();
+   * assertAlmostEquals(z0.real, -3.7245455);
+   * assertAlmostEquals(z0.imag, .51182257);
+   * assertAlmostEquals(z1.real, 2.50917847866);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
+   *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   cosh(): Complex {
-    if (this.isReal()) return new Complex(Math.cosh(this.real));
-
-    return new Complex(
+    return this.isReal() ? new Complex(Math.cosh(this.real)) : new Complex(
       Math.cosh(this.real) * Math.cos(this.imag),
       Math.sinh(this.real) * Math.sin(this.imag),
     );
@@ -780,6 +1020,19 @@ export class Complex {
    * Takes the hyperbolic tangent of a complex number.
    *
    * @returns {Complex} The hyperbolic tangent of this.
+   *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).tanh();
+   * const z1 = new Complex(Math.PI / 2).tanh();
+   * assertAlmostEquals(z0.real, .96538588, 5e-9);
+   * assertAlmostEquals(z0.imag, -.00988438, 5e-9);
+   * assertAlmostEquals(z1.real, .917152335667, 5e-9);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
    *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
@@ -792,6 +1045,19 @@ export class Complex {
    *
    * @returns {Complex} The hyperbolic cotangent of this.
    *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).coth();
+   * const z1 = new Complex(Math.PI / 2).coth();
+   * assertAlmostEquals(z0.real, 1.03574664);
+   * assertAlmostEquals(z0.imag, .01060478, 5e-9);
+   * assertAlmostEquals(z1.real, 1.09033141073);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
+   *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   coth(): Complex {
@@ -802,6 +1068,19 @@ export class Complex {
    * Takes the hyperbolic secant of a complex number.
    *
    * @returns {Complex} The hyperbolic secant of this.
+   *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).sech();
+   * const z1 = new Complex(Math.PI / 2).sech();
+   * assertAlmostEquals(z0.real, -.26351298);
+   * assertAlmostEquals(z0.imag, -.03621164);
+   * assertAlmostEquals(z1.real, .398536815338);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
    *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
@@ -814,6 +1093,19 @@ export class Complex {
    *
    * @returns {Complex} The hyperbolic cosecant of this.
    *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).csch();
+   * const z1 = new Complex(Math.PI / 2).csch();
+   * assertAlmostEquals(z0.real, -.27254866);
+   * assertAlmostEquals(z0.imag, -.04030058);
+   * assertAlmostEquals(z1.real, .434537208095);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
+   *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   csch(): Complex {
@@ -825,11 +1117,25 @@ export class Complex {
    *
    * @returns {Complex} The hyperbolic arcsine of this.
    *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).asinh();
+   * const z1 = new Complex(1).asinh();
+   * assertAlmostEquals(z0.real, 1.96863793);
+   * assertAlmostEquals(z0.imag, .9646585);
+   * assertAlmostEquals(z1.real, .88137358702);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
+   *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   asinh(): Complex {
-    if (this.isReal()) return new Complex(this.real);
-    return this.pow(2).add(1).sqrt().add(this).ln();
+    return this.isReal()
+      ? new Complex(Math.asinh(this.real))
+      : this.pow(2).add(1).sqrt().add(this).ln();
   }
 
   /**
@@ -837,19 +1143,27 @@ export class Complex {
    *
    * @returns {Complex} The hyperbolic arccosine of this.
    *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).acosh();
+   * const z1 = new Complex(1).acosh();
+   * assertAlmostEquals(z0.real, 1.98338703);
+   * assertAlmostEquals(z0.imag, 1.00014354);
+   * assertAlmostEquals(z1.real, 0, 1e-15);
+   * assertAlmostEquals(z1.imag, 0, 1e-15);
+   * ```
+   *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   acosh(): Complex {
-    if (this.isReal() && 1 <= this.real) {
-      return new Complex(Math.acosh(this.real));
-    }
-
-    const a = this.sub(1).sqrt();
-    const b = this.add(1).sqrt();
-
-    return Complex.#isInfinite(this)
-      ? Complex.#complexNaN
-      : (a.mul(b).add(this)).ln();
+    return this.isReal() && 1 <= this.real
+      ? new Complex(Math.acosh(this.real))
+      : this.isInfinite()
+      ? Complex.NaN
+      : (this.sub(1).sqrt().mul(this.add(1).sqrt()).add(this)).ln();
   }
 
   /**
@@ -857,9 +1171,22 @@ export class Complex {
    *
    * @returns {Complex} The hyperbolic arctangent of this.
    *
+   * @example Usage
+   * ```ts
+   * import { Complex } from "@std/math/unstable-complex";
+   * import { assertAlmostEquals } from "@std/assert";
+   *
+   * const z0 = new Complex(2, 3).atanh();
+   * const z1 = new Complex(2).atanh();
+   * assertAlmostEquals(z0.real, .14694667);
+   * assertAlmostEquals(z0.imag, 1.33897252);
+   * assertAlmostEquals(z1.real, .54930614);
+   * assertAlmostEquals(z1.imag, -1.57079633);
+   * ```
+   *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   atanh(): Complex {
-    return Complex.one.add(this).ln().sub(Complex.one.sub(this).ln()).div(2);
+    return this.add(1).ln().sub(Complex.one.sub(this).ln()).div(2);
   }
 }

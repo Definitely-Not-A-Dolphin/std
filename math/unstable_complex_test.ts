@@ -46,6 +46,7 @@ Deno.test("Complex", async (t) => {
     await t.step("isReal()", () => {
       assertFalse(new Complex(4, 4).isReal());
       assert(new Complex(4).isReal());
+      assert(new Complex(4, 1e-16).isReal(1e-15));
       assertFalse(complexInfinity.isReal());
       assertFalse(complexNaN.isReal());
     });
@@ -53,6 +54,7 @@ Deno.test("Complex", async (t) => {
     await t.step("isImaginary()", () => {
       assertFalse(new Complex(4, 4).isImaginary());
       assert(new Complex(0, 4).isImaginary());
+      assert(new Complex(1e-16, 4).isImaginary(1e-15));
       assertFalse(complexInfinity.isImaginary());
       assertFalse(complexNaN.isImaginary());
     });
@@ -73,7 +75,7 @@ Deno.test("Complex", async (t) => {
     });
 
     await t.step("isInfinite()", () => {
-      assertFalse(new Complex(0, 0).isInfinite());
+      assertFalse(new Complex(0).isInfinite());
       assertFalse(new Complex(0, 4).isInfinite());
       assertFalse(new Complex(NaN, 4).isInfinite());
       assert(new Complex(NaN, Infinity).isInfinite());
@@ -86,6 +88,12 @@ Deno.test("Complex", async (t) => {
       assert(new Complex(NaN, 4).isNaN());
       assertFalse(new Complex(NaN, Infinity).isNaN());
       assertFalse(new Complex(8, Infinity).isNaN());
+    });
+
+    await t.step("equals()", () => {
+      assert(new Complex(0, 3).equals(new Complex(0, 3)));
+      assert(new Complex(4, 3).equals(new Complex(4, 3 - 1e-16), 1e-15));
+      assertFalse(new Complex(4, 3).equals(new Complex(4, 3 - 1e-15), 1e-16));
     });
   });
 
