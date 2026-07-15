@@ -342,9 +342,9 @@ export class Complex {
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   sub(num: Complex | number): Complex {
-    if (typeof num === "number") num = new Complex(num);
-
-    return new Complex(this.real - num.real, this.imag - num.imag);
+    return typeof num === "number"
+      ? new Complex(this.real - num, this.imag)
+      : new Complex(this.real - num.real, this.imag - num.imag);
   }
 
   /**
@@ -474,7 +474,7 @@ export class Complex {
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   abs(): number {
-    return Math.sqrt(this.absSquared());
+    return Math.hypot(this.real, this.imag);
   }
 
   /**
@@ -494,13 +494,7 @@ export class Complex {
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   arg(): number {
-    return this.isZero()
-      ? 0
-      : this.imag === 0 && this.real > 0
-      ? 0
-      : this.imag === 0 && this.real < 0
-      ? Math.PI
-      : Math.sign(this.imag) * Math.acos(this.real / this.abs());
+    return this.isInfinite() ? NaN : Math.atan2(this.imag, this.real);
   }
 
   /**
@@ -596,14 +590,14 @@ export class Complex {
    * import { Complex } from "@std/math/unstable-complex";
    * import { assertAlmostEquals } from "@std/assert";
    *
-   * const lnNegOne = new Complex(-1).ln();
+   * const lnNegOne = new Complex(-1).log();
    * assertAlmostEquals(lnNegOne.real, 0);
    * assertAlmostEquals(lnNegOne.imag, Math.PI);
    * ```
    *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
-  ln(): Complex {
+  log(): Complex {
     return this.isZero()
       ? Complex.NaN
       : new Complex(Math.log(this.absSquared()) / 2, this.arg());
@@ -619,15 +613,15 @@ export class Complex {
    * import { Complex } from "@std/math/unstable-complex";
    * import { assertAlmostEquals } from "@std/assert";
    *
-   * const z = new Complex(2, 3).log();
+   * const z = new Complex(2, 3).log10();
    * assertAlmostEquals(z.real, .55697168);
    * assertAlmostEquals(z.imag, .42682189);
    * ```
    *
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
-  log(): Complex {
-    return this.ln().div(Math.LN10);
+  log10(): Complex {
+    return this.log().div(Math.LN10);
   }
 
   /**
@@ -648,7 +642,7 @@ export class Complex {
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   logn(n: number): Complex {
-    return this.ln().div(Math.log(n));
+    return this.log().div(Math.log(n));
   }
 
   /**
@@ -727,7 +721,7 @@ export class Complex {
     } else {
       // If w is a complex number, use this formula.
       return this.pow(w.real).mul(
-        this.ln().mul(new Complex(0, w.imag)).exp(),
+        this.log().mul(new Complex(0, w.imag)).exp(),
       );
     }
   }
@@ -904,7 +898,7 @@ export class Complex {
    */
   asin(): Complex {
     return this.isReal() ? new Complex(Math.asin(this.real)) : Complex.negI.mul(
-      (Complex.i.mul(this).add((new Complex(1).sub(this.pow(2))).sqrt())).ln(),
+      (Complex.i.mul(this).add((new Complex(1).sub(this.pow(2))).sqrt())).log(),
     );
   }
 
@@ -953,8 +947,8 @@ export class Complex {
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   atan(): Complex {
-    return (Complex.one.sub(Complex.i.mul(this))).ln().sub(
-      (Complex.one.add(this.mul(Complex.i))).ln(),
+    return (Complex.one.sub(Complex.i.mul(this))).log().sub(
+      (Complex.one.add(this.mul(Complex.i))).log(),
     ).div(2).mul(Complex.i);
   }
 
@@ -1131,7 +1125,7 @@ export class Complex {
   asinh(): Complex {
     return this.isReal()
       ? new Complex(Math.asinh(this.real))
-      : this.pow(2).add(1).sqrt().add(this).ln();
+      : this.pow(2).add(1).sqrt().add(this).log();
   }
 
   /**
@@ -1159,7 +1153,7 @@ export class Complex {
       ? new Complex(Math.acosh(this.real))
       : this.isInfinite()
       ? Complex.NaN
-      : (this.sub(1).sqrt().mul(this.add(1).sqrt()).add(this)).ln();
+      : (this.sub(1).sqrt().mul(this.add(1).sqrt()).add(this)).log();
   }
 
   /**
@@ -1183,6 +1177,6 @@ export class Complex {
    * @experimental **UNSTABLE**: New API, yet to be vetted.
    */
   atanh(): Complex {
-    return this.add(1).ln().sub(Complex.one.sub(this).ln()).div(2);
+    return this.add(1).log().sub(Complex.one.sub(this).log()).div(2);
   }
 }

@@ -215,10 +215,19 @@ Deno.test("Complex", async (t) => {
 
     await t.step("arg()", () => {
       assertAlmostEquals(new Complex(1, 2).arg(), 1.107148718);
+      assertEquals(Complex.negOne.arg(), Math.PI);
       assertEquals(new Complex(0, -2).arg(), -Math.PI / 2);
       assertEquals(Complex.zero.arg(), 0);
       assertEquals(Complex.NaN.arg(), NaN);
       assertEquals(Complex.Infinity.arg(), NaN);
+
+      const nums = Array.from(Array(10)).keys(); // [0, 1, 2, ...]
+      for (const re of nums) {
+        for (const im of nums) {
+          const arg = new Complex(re, im).arg();
+          assert(-Math.PI < arg && arg <= Math.PI);
+        }
+      }
     });
 
     await t.step("conj()", () => {
@@ -327,53 +336,53 @@ Deno.test("Complex", async (t) => {
       assertEquals(Complex.Infinity.cbrt(), Complex.Infinity);
     });
 
-    await t.step("ln()", () => {
-      assertAlmostEqualComplex(
-        new Complex(1, 2).ln(),
-        new Complex(.80471896, 1.10714872),
-      );
-      assertAlmostEqualComplex(
-        new Complex(-1, 2).ln(),
-        new Complex(.80471896, 2.03444394),
-      );
-      assertAlmostEqualComplex(
-        new Complex(1, -2).ln(),
-        new Complex(.80471896, -1.10714872),
-      );
-      assertAlmostEqualComplex(
-        new Complex(-1, -2).ln(),
-        new Complex(.80471896, -2.03444394),
-      );
-      assertAlmostEqualComplex(
-        new Complex(-1).ln(),
-        new Complex(0, Math.PI),
-      );
-
-      assertEquals(Complex.zero.ln(), Complex.NaN);
-      assertEquals(Complex.NaN.ln(), Complex.NaN);
-      assertEquals(Complex.Infinity.ln(), Complex.Infinity);
-    });
-
     await t.step("log()", () => {
       assertAlmostEqualComplex(
         new Complex(1, 2).log(),
-        new Complex(.349485, .48082858),
+        new Complex(.80471896, 1.10714872),
       );
       assertAlmostEqualComplex(
         new Complex(-1, 2).log(),
-        new Complex(.349485, .88354778),
+        new Complex(.80471896, 2.03444394),
       );
       assertAlmostEqualComplex(
         new Complex(1, -2).log(),
-        new Complex(.349485, -.48082858),
+        new Complex(.80471896, -1.10714872),
       );
       assertAlmostEqualComplex(
         new Complex(-1, -2).log(),
-        new Complex(.349485, -.88354778),
+        new Complex(.80471896, -2.03444394),
       );
+      assertAlmostEqualComplex(
+        new Complex(-1).log(),
+        new Complex(0, Math.PI),
+      );
+
       assertEquals(Complex.zero.log(), Complex.NaN);
       assertEquals(Complex.NaN.log(), Complex.NaN);
       assertEquals(Complex.Infinity.log(), Complex.Infinity);
+    });
+
+    await t.step("log10()", () => {
+      assertAlmostEqualComplex(
+        new Complex(1, 2).log10(),
+        new Complex(.349485, .48082858),
+      );
+      assertAlmostEqualComplex(
+        new Complex(-1, 2).log10(),
+        new Complex(.349485, .88354778),
+      );
+      assertAlmostEqualComplex(
+        new Complex(1, -2).log10(),
+        new Complex(.349485, -.48082858),
+      );
+      assertAlmostEqualComplex(
+        new Complex(-1, -2).log10(),
+        new Complex(.349485, -.88354778),
+      );
+      assertEquals(Complex.zero.log10(), Complex.NaN);
+      assertEquals(Complex.NaN.log10(), Complex.NaN);
+      assertEquals(Complex.Infinity.log10(), Complex.Infinity);
     });
 
     await t.step("logn()", () => {
@@ -432,7 +441,7 @@ Deno.test("Complex", async (t) => {
       for (const real of nums) {
         for (const imag of nums) {
           assertAlmostEqualComplex(
-            new Complex(real, imag).ln().exp(),
+            new Complex(real, imag).log().exp(),
             new Complex(real, imag),
             1e-15,
           );
